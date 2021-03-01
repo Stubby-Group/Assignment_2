@@ -28,6 +28,14 @@ The bigger the difference between RTs in the congruent and incongruent condition
 For each participant you have 6 variables: 1) ID, 2) AltercentricIntrusion (continuous score), 3) Diagnosis (schizophrenia vs. control), 4) VoiceHearing (severity of voice hearing symptoms, continuous score of the severity of the symptom as measured by a clinician), 5) MindReading (severity of delusions of mind reading, continuous score of the severity of the symptom as measured by a clinician); 6) Apathy (severity of lack of motivation in taking care of oneself, from washing to showing up at work, continuous score of the severity of the symptom as measured by a clinician). 
 N.B. Real clinical scores of symptoms would be on a likert scale, and altercentric intrusions would be on a slightly complex continuous scale. But life is too short for that shit, and we want to focus on multivariate models and causal inference, so all those variables in the assignment (but ID and Diagnosis) have been simulated as Gaussian distributions.
 
+```{r}
+# Loading packages:
+pacman::p_load(tidyverse, rethinking, brms)
+
+# Loading the data:
+d <- read.csv("Ass2.csv")
+```
+
 The research questions you have to answer are the following:
 
 ## First part
@@ -35,7 +43,43 @@ The research questions you have to answer are the following:
 Q1.1) Does schizophrenia involve altercentric intrusion? Define model and priors. Test the implications of your priors (prior predictive checks) and if needed adjust them. Run the model. Test the quality of the fitted model (posterior predictive checks, prior-posterior updates). Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots.
 
 ```{r}
+# Plotting
+ggplot(d, aes(AltercentricIntrusion)) + 
+  geom_density() #The mean is at about 4 and the sd is about 2. We should probably scale the data:
 
+# Possibly scale before building priors. If we scale, the default priors would be mean = 0 and sd = 1. default prior: you shouldn't expect priors that go outside of the scales of the data.
+
+dstand <- d
+
+dstand$AltercentricIntrusion <- standardize(d$AltercentricIntrusion)
+
+ggplot(dstand, aes(AltercentricIntrusion)) + 
+  geom_density()
+
+
+# Modeling the data 
+ai_f0 <- bf(AltercentricIntrusion ~ 1 + 
+              (1 | ID))
+# Modeling the data without priors and stuff
+ai_f1 <- bf(AltercentricIntrusion ~ 1 + Diagnosis + 
+              (1 + AltercentricIntrusion | ID))
+
+
+#Priors
+get_prior(ai_f0, dstand, family = gaussian) #We need a prior for the intercept, a prior for the sigma, and a prior for the sd:
+prior <- c(
+  prior(normal(0, 1), class = Intercept),
+  prior(normal(1, 0.5), class = sigma),
+  prior(normal(0, 0.5), class = sd) #Prior for the random effects - for the variation that each individual can have from the main effect
+)
+
+# Now we want to know whether this is a good model
+ai_m0 <- brm(
+  ai_f0,
+  dstand,
+  family = gaussian,
+  
+) #We expect that the baseline is no diff
 ```
 
 
