@@ -22,8 +22,8 @@ The current study investigates 1) whether schizophrenia is indeed related to alt
 The task is a slightly modified version of this: https://www.ncbi.nlm.nih.gov/pubmed/20731512 (also what Nicole and Louise described in their guest talk) You look at a picture with some dots visible to you, as well as with a different person with a different set of dots visible to them. The number of dots you see and that the other sees can be the same (congruent condition) or not (incongruent condition). You are tasked to indicate whether a given number (e.g. 3) matches the number of dots you see (and the dots visible to the other person are irrelevant to the task).
 
 
-The tasks investigates altercentric intrusion: will your reaction time change according to whether the other person is seeing the same amount of dots as you, or not? The idea is that if you correctly inhibit social information, your reaction time should not change, as the information about the other person is not relevant. On the contrary, if you nevertheless use task irrelevant social information, you'll be slower at indicating whether 3 is the right number of dots when the other person sees a different amount of dots than you (conflicting information).
-The bigger the difference between RTs in the congruent and incongruent condition the bigger the altercentric intrusion effect.
+The tasks investigates altercentric intrusion: will your reaction time change according to whether the other person is seeing the same amount of dots as you, or not? The idea is that *if you correctly inhibit social information, your reaction time should not change, as the information about the other person is not relevant.* On the contrary, if you nevertheless use task irrelevant social information, you'll be slower at indicating whether 3 is the right number of dots when the other person sees a different amount of dots than you (conflicting information).
+*The bigger the difference between RTs in the congruent and incongruent condition the bigger the altercentric intrusion effect.*
 
 For each participant you have 6 variables: 1) ID, 2) AltercentricIntrusion (continuous score), 3) Diagnosis (schizophrenia vs. control), 4) VoiceHearing (severity of voice hearing symptoms, continuous score of the severity of the symptom as measured by a clinician), 5) MindReading (severity of delusions of mind reading, continuous score of the severity of the symptom as measured by a clinician); 6) Apathy (severity of lack of motivation in taking care of oneself, from washing to showing up at work, continuous score of the severity of the symptom as measured by a clinician). 
 N.B. Real clinical scores of symptoms would be on a likert scale, and altercentric intrusions would be on a slightly complex continuous scale. But life is too short for that shit, and we want to focus on multivariate models and causal inference, so all those variables in the assignment (but ID and Diagnosis) have been simulated as Gaussian distributions.
@@ -35,7 +35,26 @@ The research questions you have to answer are the following:
 Q1.1) Does schizophrenia involve altercentric intrusion? Define model and priors. Test the implications of your priors (prior predictive checks) and if needed adjust them. Run the model. Test the quality of the fitted model (posterior predictive checks, prior-posterior updates). Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots.
 
 ```{r}
+library(tidyverse)
+pacman::p_load(brms)
+d <- read.csv("Ass2.csv")
+print(paste(mean(d$VoiceHearing),
+            mean(d$MindReading),
+            mean(d$Apathy),
+            mean(d$AltercentricIntrusion)))
+# investigate whether a schizophrenia diagnosis predicts increased altercentric intrusion
+# define model and priors
+model_1 <- brm(data = d,
+               family = gaussian,
+               formula = AltercentricIntrusion ~ 1 + Diagnosis,
+               )
 
+print(model_1)
+# test implications of your priors (prior predictive checks)
+
+# test the quality of the fitted model (posterior predictive checks, prior-posterior updates)
+
+# plot
 ```
 
 
