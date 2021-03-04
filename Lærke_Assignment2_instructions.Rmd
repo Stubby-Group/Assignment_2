@@ -108,14 +108,17 @@ ai_m1_prior <- brm(
   cores = 2
 ) #This is to see how the model fits the data before having seen the data
 
-pp_check(ai_m1_priors, nsamples = 100)# Shows us how the predictions of the model are going to spread out compared to the actual data
-plot(conditional_effects(ai_m1_priors), spaghetti = T, 
+pp_check(ai_m1_prior, nsamples = 100)# Shows us how the predictions of the model are going to spread out compared to the actual data
+plot(conditional_effects(ai_m1_prior), spaghetti = T, 
      method = "predict", 
      nsamples = 100, 
      points = T)# see how the predictions of the effect of diagnosis are gonna be predicted by the model
+# Riccardo: It approcimates the data okay, but given that it hasn't seen the data, and we have three levels of uncertainty (eh? intercept, sd that [eac] random effect has from that, and the sigma, [it goes all the way to -20 and +20]), 
+
+
 
 #Rerunning the actual model with the new priors:
-ai_m1_prior <- brm(
+ai_m1 <- brm(
   ai_f1,
   dstand,
   family = gaussian,
