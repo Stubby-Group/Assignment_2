@@ -62,12 +62,12 @@ ai_f0 <- bf(AltercentricIntrusion ~ 1 +
               (1 | ID))
 # Modeling the data without priors and stuff
 ai_f1 <- bf(AltercentricIntrusion ~ 1 + Diagnosis + 
-              (1 + AltercentricIntrusion | ID))
+              (1 + AltercentricIntrusion | ID))  #0+ or 1+?????
 
 
 #Priors
 get_prior(ai_f0, dstand, family = gaussian) #We need a prior for the intercept, a prior for the sigma, and a prior for the sd:
-prior <- c(
+prior1 <- c(
   prior(normal(0, 1), class = Intercept),
   prior(normal(1, 0.5), class = sigma),
   prior(normal(0, 0.5), class = sd) #Prior for the random effects - for the variation that each individual can have from the main effect
@@ -78,20 +78,56 @@ ai_m0 <- brm(
   ai_f0,
   dstand,
   family = gaussian,
-  prior = prior,
+  prior = prior1,
   sample_prior = T,
   back="cmdstanr", # Just makes it run faster
   threads = threading(2) #spreading it across all my (something?)
 ) #We expect that the baseline is no diff
 
+pp_check(ai_m0) # We see that our model is describing the general shape pretty nicely
 
-# Now also including a prior for beta
-prior <- c(
+
+# Now also including a prior for beta (Diagnosis)
+prior2 <- c(
   prior(normal(0, 1), class = Intercept),
-  prior(normal(0, 0.5), class = Intercept), # "a prior for the relation between feedback and change" what should i set the second number to? (lecture: 1:22:00) I don't understand his reasons for choosing 0.5
+  prior(normal(0, 0.5), class = b), # "a prior for the relation between feedback and change" what should i set the second number to? (lecture: 1:22:00) I don't understand his reasons for choosing 0.5
   prior(normal(1, 0.5), class = sigma),
   prior(normal(0, 0.5), class = sd)
 )
+
+#What is this?
+ai_m1_prior <- brm(
+  ai_f1,
+  dstand,
+  family = gaussian,
+  prior = prior2,
+  sample_prior = "only",
+  back="cmdstanr",
+  threads = threading(2), 
+  chains = 2, #these two (chains and cores = 2) make the model run faster
+  cores = 2
+) #This is to see how the model fits the data before having seen the data
+
+pp_check(ai_m1_priors, nsamples = 100)# Shows us how the predictions of the model are going to spread out compared to the actual data
+plot(conditional_effects(ai_m1_priors), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T)# see how the predictions of the effect of diagnosis are gonna be predicted by the model
+
+#Rerunning the actual model with the new priors:
+ai_m1_prior <- brm(
+  ai_f1,
+  dstand,
+  family = gaussian,
+  prior = prior2,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2), #spreading it across all my (something?)
+  chains = 2,
+  cores = 2
+)
+
+pp_check(ai_m1) #
 ```
 
 
