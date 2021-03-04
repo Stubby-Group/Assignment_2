@@ -64,28 +64,28 @@ m2 <- bf(AltercentricIntrusion ~ 1 + Diagnosis +
 
 
 #Priors
-get_prior(m1, dstand, family = gaussian) #We need a prior for the intercept, a prior for the sigma, and a prior for the sd:
+get_prior(m1, dstand, family = gaussian) #We need a prior for the intercept, one for beta, a prior for the sigma, and a prior for the sd:
+
 prior1 <- c(
   prior(normal(0, 1), class = Intercept),
   prior(normal(1, 0.5), class = sigma),
-  prior(normal(0, 0.5), class = sd) #Prior for the random effects - for the variation that each individual can have from the main effect
+  prior(normal(0, 0.5), class = sd), #Prior for the random effects - for the variation that each individual can have from the main effect
+  prior(normal(0,0.5), class = b)
 )
 
-ll_f <- bf(df$AltercentricIntrusion ~ df$Diagnosis)
-prior <- c(prior(normal(10, 100), class = Intercept),
-           prior(normal(2, 10), class = b),
-           prior(normal(20,10), class = sigma)
+#ll_f <- bf(df$AltercentricIntrusion ~ df$Diagnosis)
 
 
-lrl_m_priorCheck <- brm(
-  ll_f,
-  df,
-  prior = prior,
-  sample_prior = "only"
+m1_priorCheck <- brm(
+  m1,
+  dstand,
+  family = gaussian,
+  prior = prior1,
+  sample_prior = "only",
 )
 
 
-pp_check (lrl_m_priorCheck, nsamples= 100)
+pp_check (m1_priorCheck, nsamples= 100)
 ```
 
 ```{r}
