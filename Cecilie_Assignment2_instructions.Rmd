@@ -85,7 +85,44 @@ m1_priorCheck <- brm(
 )
 
 
+m2_priorCheck <- brm(
+  m2,
+  dstand,
+  family = gaussian,
+  prior = prior1,
+  sample_prior = "only",
+)
+
 pp_check (m1_priorCheck, nsamples= 100)
+pp_check (m2_priorCheck, nsamples= 100)
+
+plot(conditional_effects(m2_priorCheck), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T) 
+plot(conditional_effects(m2_priorCheck), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
+
+
+m2 <- brm(
+  m2,
+  dstand,
+  family = gaussian,
+  prior = prior1,
+  sample_prior = T,
+)
+
+pp_check (m2, nsamples= 100)
+plot(conditional_effects(m2), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T) 
+plot(conditional_effects(m2), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
 ```
 
 ```{r}
