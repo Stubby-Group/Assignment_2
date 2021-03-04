@@ -113,8 +113,15 @@ plot(conditional_effects(ai_m1_prior), spaghetti = T,
      method = "predict", 
      nsamples = 100, 
      points = T)# see how the predictions of the effect of diagnosis are gonna be predicted by the model
-# Riccardo: It approcimates the data okay, but given that it hasn't seen the data, and we have three levels of uncertainty (eh? intercept, sd that [eac] random effect has from that, and the sigma, [it goes all the way to -20 and +20]), 
-
+# Riccardo: It approcimates the data okay, but given that it hasn't seen the data, and we have three levels of uncertainty (eh? intercept, sd that [eac] random effect has from that, and the sigma, [it goes all the way to -20 and +20]), ... ["It is covering the area pretty well, there is no single data point that is excluded, so we should be able to do this nicely"]
+#What are the predicted effects for diagnosis before we see the data given our prior.
+plot(conditional_effects(ai_m1_prior), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
+# the same plot, but without the sigma - without the actual predictions of the data - but just looking at the predictions of the population mean. What we would expect the model to generate. We see that slopes are mostly a perfect 0 (horizontal)
+# Does this look okay? idk. Riccardo had (in the example) splots of all sorts (from -1 to 1), while we have just a straight line.
+# no spikes in the prediction (no uncertainty?) - that doesn't sound right...
 
 
 #Rerunning the actual model with the new priors:
@@ -130,8 +137,58 @@ ai_m1 <- brm(
   cores = 2
 )
 
-pp_check(ai_m1) #
+#doing the same disgnostica again, to see how the model is fitting the data.
+pp_check(ai_m1, nsamples = 100)
+plot(conditional_effects(ai_m1), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T) #the range of predictions that the model is gonna make. actual predictions including all of the uncertainty.
+plot(conditional_effects(ai_m1), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)# This plot says: what is the average expected effect of diagnosis at the population level (= across all participants). The model, when you take away the sigma (the prediction error) and the random effects (the variation by participant). What are the possible effects of diagnosis which are compatible with the model estimates.
+# Effects of diagnosis are very certain and relatively small.
+
+#1:32:00: He speaks of regression to the mean, and why the model might not actually be showing us what we want.
+
+summary(ai_m1)
 ```
+```{r overview of plots}
+# So that we can plot all plots at the same time without having to rerun models
+
+ggplot(d, aes(AltercentricIntrusion)) + 
+  geom_density()
+
+
+pp_check(ai_m0)
+
+
+pp_check(ai_m1_prior, nsamples = 100)
+plot(conditional_effects(ai_m1_prior), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T)
+plot(conditional_effects(ai_m1_prior), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
+
+pp_check(ai_m1, nsamples = 100)
+plot(conditional_effects(ai_m1), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T) 
+plot(conditional_effects(ai_m1), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
+
+summary(ai_m1)
+```
+
+
+
+
 
 
 Q1.2) Is altercentric intrusion related to specific symptoms *in the patients*? Identify which of the symptoms could be relevant (given their description above). Should you include more than one symptom? Build models, priors, predictive checks. Assess the evidence and report models and results, including plots. Discuss whether the results make sense.
