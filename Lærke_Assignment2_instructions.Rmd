@@ -55,6 +55,8 @@ Q1.1) Does schizophrenia involve altercentric intrusion?
 # How do we know if we want to change our priors based on the prior predictive check? Was it even a prior predictive chect that I made?
 
 # Will the symptoms not likely be intercorrelated with diagnosis?
+
+# If we are looking at causal relationships, then why do we choose to have D predict AI? I would sure hope, that it is the AI that influences the D and not the other way around
 ```
 
 
@@ -253,8 +255,8 @@ g <- dagitty('dag {
     D [pos = "2,1"]
     AI [pos = "1,0"]
     
-    MR -> AI -> D
-    MR -> D
+    MR -> D -> AI
+    MR -> AI
 }')
 plot(g)
 
