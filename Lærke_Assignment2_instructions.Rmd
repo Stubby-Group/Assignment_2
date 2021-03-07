@@ -30,7 +30,7 @@ N.B. Real clinical scores of symptoms would be on a likert scale, and altercentr
 
 ```{r}
 # Loading packages:
-pacman::p_load(tidyverse, rethinking, brms, bayesplot, viridis, ggplot2)
+pacman::p_load(tidyverse, rethinking, brms, bayesplot, viridis, ggplot2, dagitty)
 
 # Loading the data:
 d <- read.csv("Ass2.csv")
@@ -49,12 +49,16 @@ Q1.1) Does schizophrenia involve altercentric intrusion?
 
 ```{r}
 # Something about ai always being positive? should we do that? (exp(log_sigma) in the likelihood, so that the result is always greater than zero.)
+
 # Change intercept prior to 0.2
+
 # How do we know if we want to change our priors based on the prior predictive check? Was it even a prior predictive chect that I made?
+
+# Will the symptoms not likely be intercorrelated with diagnosis?
 ```
 
 
-```{r First look + standardization}
+```{r_1.1) First look + standardization}
 # Plotting
 ggplot(d, aes(AltercentricIntrusion)) + 
   geom_density() #The mean is at about 4 and the sd is about 2. We should probably scale the data:
@@ -63,15 +67,14 @@ ggplot(d, aes(AltercentricIntrusion)) +
 
 dstand <- d
 
-dstand$AltercentricIntrusion <- standardize(d$AltercentricIntrusion)
+dstand$AltercentricIntrusion <- standardize(dstand$AltercentricIntrusion)
 
 ggplot(dstand, aes(AltercentricIntrusion)) + 
   geom_density()
 ```
 
 
-
-```{r 1) define model and priors}
+```{r_1.1.1) define model and priors}
 # Writing formulas (ai_f = altercentric intrusion formula)
 ai_f0 <- bf(AltercentricIntrusion ~ 1 + 
               (1 | ID)) #This is the baseline model (as a practice/comparison thing)
@@ -83,14 +86,14 @@ ai_f1 <- bf(AltercentricIntrusion ~ 1 + Diagnosis +
 
 #Priors
 get_prior(ai_f0, dstand, family = gaussian) #We need a prior for the intercept, a prior for the sigma, and a prior for the sd:
-prior1 <- c(
+prior0 <- c(
   prior(normal(0, 1), class = Intercept),
   prior(normal(1, 0.5), class = sigma),
   prior(normal(0, 0.5), class = sd) #Prior for the random effects - for the variation that each individual can have from the main effect
 )
 
 # Now also including a prior for beta (Diagnosis)
-prior2 <- c(
+prior1 <- c(
   prior(normal(0, 1), class = Intercept),
   prior(normal(0, 0.5), class = b), # "a prior for the relation between feedback and change" what should i set the second number to? (lecture: 1:22:00) I don't understand his reasons for choosing 0.5
   prior(normal(1, 0.5), class = sigma),
@@ -99,13 +102,13 @@ prior2 <- c(
 ```
 
 
-```{r 2) prior predictive check}
+```{r_1.1.2) prior predictive check}
 #What is this?
 ai_m1_prior <- brm(
   ai_f1,
   dstand,
   family = gaussian,
-  prior = prior2,
+  prior = prior1,
   sample_prior = "only",
   back="cmdstanr",
   threads = threading(2), 
@@ -130,15 +133,13 @@ plot(conditional_effects(ai_m1_prior), spaghetti = T,
 ```
 
 
-
-
-```{r 1) Running the model(s)}
+```{r_1.1.3) Running the model(s)}
 # Now we want to know whether this is a good model
 ai_m0 <- brm(
   ai_f0,
   dstand,
   family = gaussian,
-  prior = prior1,
+  prior = prior0,
   sample_prior = T,
   back="cmdstanr", # Just makes it run faster
   threads = threading(2) #spreading it across all my (something?)
@@ -151,7 +152,7 @@ ai_m1 <- brm(
   ai_f1,
   dstand,
   family = gaussian,
-  prior = prior2,
+  prior = prior1,
   sample_prior = T,
   back="cmdstanr", # Just makes it run faster
   threads = threading(2), #spreading it across all my (something?)
@@ -161,7 +162,7 @@ ai_m1 <- brm(
 ```
 
 
-```{r 1) Posterior predictive check}
+```{r_1.1.4) Posterior predictive check}
 
 pp_check(ai_m0) # We see that our model is describing the general shape pretty nicely
 
@@ -183,7 +184,7 @@ summary(ai_m1)
 ```
 
 
-```{r 5) ?}
+```{r_1.1.5) ?}
 # Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots
      # Is this a coding task, or does it just mean reporting?
 ```
@@ -230,9 +231,89 @@ summary(ai_m1)
 
 Q1.2) Is altercentric intrusion related to specific symptoms *in the patients*? Identify which of the symptoms could be relevant (given their description above). Should you include more than one symptom? Build models, priors, predictive checks. Assess the evidence and report models and results, including plots. Discuss whether the results make sense.
 
+###### . ######
+Altercentric intrusion is the inability to inhibit social information.
+
+The (other) symptoms we have are:
+   - VoiceHearing
+   - MindReading (delusions of mind reading)
+   - Apathy (lack of motivation in taking care of oneself, from washing to showing up at work)
+
+Looking at these, I would guess that MindReading is the most likely to be relevant to altercentric intrusion. If we were to include another as well, then I would say that VoiceHearing is second relevant out of the three, and apathy is the least relevant.
+
+- How much does x predictor add to the model one we already know the diagnosis?
 
 ```{r}
+# Standardizing MindReading:
+dstand$MindReading <- standardize(dstand$MindReading)
 
+# I would expect:
+g <- dagitty('dag {
+    MR [pos = "0,1"]
+    D [pos = "2,1"]
+    AI [pos = "1,0"]
+    
+    MR -> AI -> D
+    MR -> D
+}')
+plot(g)
+
+# Exploring the relationship between Diagnosis and MindReading:
+ggplot(dstand, aes(MindReading, Diagnosis)) + 
+  geom_point() + 
+  geom_smooth() + 
+  theme_classic()
+
+ggplot(dstand, aes(MindReading, AltercentricIntrusion)) + 
+  geom_point() + 
+  geom_smooth() + 
+  theme_classic()
+
+# There seems to be a positive relationship between the two in both of these plots
+```
+
+
+```{r}
+# Defining model formula:
+ai_f2 <- bf(AltercentricIntrusion ~ 1 + Diagnosis + MindReading +
+              (1 + Diagnosis + MindReading | ID)) #What now about the random slope? do we also want random slope for MindReading? I would say nah, probs not, but Riccardo has it in there, soooooo...
+
+
+# Defining priors
+get_prior(ai_f2, dstand, family = gaussian)
+
+prior2 <- c(
+  prior(normal(0, 1), class = Intercept),
+  prior(normal(0, 0.5), class = b),
+  # Do we not need an extra prior for this, or what? (1:43:41)
+  prior(normal(1, 0.5), class = sigma),
+  prior(normal(0, 0.5), class = sd)
+)
+
+
+# Fitting the model:
+ai_m2 <- brm(
+  ai_f2,
+  dstand,
+  family = gaussian,
+  prior = prior2,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2), #spreading it across all my (something?)
+  chains = 2,
+  cores = 2,
+  #control = list(
+    #adapt_delta = 0.99,
+    #max_threadepth = 20)
+)
+
+pp_check(ai_m2, nsamples = 100) #What are we looking at here?
+
+posterior2 <- posterior_samples(ai_m2)
+head(posterior2) #How is this supposed to be helpful?
+
+
+ai_m2
 ```
 
 
