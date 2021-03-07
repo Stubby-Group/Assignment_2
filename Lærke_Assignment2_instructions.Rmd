@@ -40,9 +40,21 @@ The research questions you have to answer are the following:
 
 ## First part
 
-Q1.1) Does schizophrenia involve altercentric intrusion? Define model and priors. Test the implications of your priors (prior predictive checks) and if needed adjust them. Run the model. Test the quality of the fitted model (posterior predictive checks, prior-posterior updates). Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots.
+Q1.1) Does schizophrenia involve altercentric intrusion? 
+      1) Define model and priors. 
+      2) Test the implications of your priors (prior predictive checks) and if needed adjust them. 
+      3) Run the model. 
+      4) Test the quality of the fitted model (posterior predictive checks, prior-posterior updates). 
+      5) Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots.
 
 ```{r}
+# Something about ai always being positive? should we do that? (exp(log_sigma) in the likelihood, so that the result is always greater than zero.)
+# Change intercept prior to 0.2
+# How do we know if we want to change our priors based on the prior predictive check? Was it even a prior predictive chect that I made?
+```
+
+
+```{r First look + standardization}
 # Plotting
 ggplot(d, aes(AltercentricIntrusion)) + 
   geom_density() #The mean is at about 4 and the sd is about 2. We should probably scale the data:
@@ -55,8 +67,11 @@ dstand$AltercentricIntrusion <- standardize(d$AltercentricIntrusion)
 
 ggplot(dstand, aes(AltercentricIntrusion)) + 
   geom_density()
+```
 
 
+
+```{r 1) define model and priors}
 # Writing formulas (ai_f = altercentric intrusion formula)
 ai_f0 <- bf(AltercentricIntrusion ~ 1 + 
               (1 | ID)) #This is the baseline model (as a practice/comparison thing)
@@ -74,20 +89,6 @@ prior1 <- c(
   prior(normal(0, 0.5), class = sd) #Prior for the random effects - for the variation that each individual can have from the main effect
 )
 
-# Now we want to know whether this is a good model
-ai_m0 <- brm(
-  ai_f0,
-  dstand,
-  family = gaussian,
-  prior = prior1,
-  sample_prior = T,
-  back="cmdstanr", # Just makes it run faster
-  threads = threading(2) #spreading it across all my (something?)
-) #We expect that the baseline is no diff
-
-pp_check(ai_m0) # We see that our model is describing the general shape pretty nicely
-
-
 # Now also including a prior for beta (Diagnosis)
 prior2 <- c(
   prior(normal(0, 1), class = Intercept),
@@ -95,7 +96,10 @@ prior2 <- c(
   prior(normal(1, 0.5), class = sigma),
   prior(normal(0, 0.5), class = sd)
 )
+```
 
+
+```{r 2) prior predictive check}
 #What is this?
 ai_m1_prior <- brm(
   ai_f1,
@@ -123,6 +127,23 @@ plot(conditional_effects(ai_m1_prior), spaghetti = T,
 # the same plot, but without the sigma - without the actual predictions of the data - but just looking at the predictions of the population mean. What we would expect the model to generate. We see that slopes are mostly a perfect 0 (horizontal)
 # Does this look okay? idk. Riccardo had (in the example) splots of all sorts (from -1 to 1), while we have just a straight line.
 # no spikes in the prediction (no uncertainty?) - that doesn't sound right...
+```
+
+
+
+
+```{r 1) Running the model(s)}
+# Now we want to know whether this is a good model
+ai_m0 <- brm(
+  ai_f0,
+  dstand,
+  family = gaussian,
+  prior = prior1,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2) #spreading it across all my (something?)
+) #We expect that the baseline is no diff
+
 
 
 #Rerunning the actual model with the new priors:
@@ -137,6 +158,12 @@ ai_m1 <- brm(
   chains = 2,
   cores = 2
 )
+```
+
+
+```{r 1) Posterior predictive check}
+
+pp_check(ai_m0) # We see that our model is describing the general shape pretty nicely
 
 #doing the same disgnostica again, to see how the model is fitting the data.
 pp_check(ai_m1, nsamples = 100)
@@ -154,6 +181,15 @@ plot(conditional_effects(ai_m1), spaghetti = T,
 
 summary(ai_m1)
 ```
+
+
+```{r 5) ?}
+# Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots
+     # Is this a coding task, or does it just mean reporting?
+```
+
+
+
 ```{r overview of plots}
 # So that we can plot all plots at the same time without having to rerun models
 
