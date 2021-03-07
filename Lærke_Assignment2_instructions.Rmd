@@ -30,7 +30,7 @@ N.B. Real clinical scores of symptoms would be on a likert scale, and altercentr
 
 ```{r}
 # Loading packages:
-pacman::p_load(tidyverse, rethinking, brms, bayesplot, viridis)
+pacman::p_load(tidyverse, rethinking, brms, bayesplot, viridis, ggplot2)
 
 # Loading the data:
 d <- read.csv("Ass2.csv")
@@ -57,12 +57,13 @@ ggplot(dstand, aes(AltercentricIntrusion)) +
   geom_density()
 
 
-# Modeling the data 
+# Writing formulas (ai_f = altercentric intrusion formula)
 ai_f0 <- bf(AltercentricIntrusion ~ 1 + 
-              (1 | ID))
+              (1 | ID)) #This is the baseline model (as a practice/comparison thing)
 # Modeling the data without priors and stuff
 ai_f1 <- bf(AltercentricIntrusion ~ 1 + Diagnosis + 
-              (1 + AltercentricIntrusion | ID))  #0+ or 1+?????
+              (1 + Diagnosis | ID))  #0+ or 1+?????
+#We expect altercentric intrusion to be predicted by diagnosis, but that the effect will vary according to participant.
 
 
 #Priors
