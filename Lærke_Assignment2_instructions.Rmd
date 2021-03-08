@@ -52,16 +52,14 @@ Q1.1) Does schizophrenia involve altercentric intrusion?
 
 # Change intercept prior to 0.2
 
-# How do we know if we want to change our priors based on the prior predictive check? Was it even a prior predictive chect that I made?
+# How do we know if we want to change our priors based on the prior predictive check? Was it even a prior predictive check that I made?
 
 # Will the symptoms not likely be intercorrelated with diagnosis?
 
 # If we are looking at causal relationships, then why do we choose to have D predict AI? I would sure hope, that it is the AI that influences the D and not the other way around
 ```
 
-
-```{r_1.1) First look + standardization}
-# Plotting
+```{r}
 ggplot(d, aes(AltercentricIntrusion)) + 
   geom_density() #The mean is at about 4 and the sd is about 2. We should probably scale the data:
 
@@ -75,8 +73,7 @@ ggplot(dstand, aes(AltercentricIntrusion)) +
   geom_density()
 ```
 
-
-```{r_1.1.1) define model and priors}
+```{r}
 # Writing formulas (ai_f = altercentric intrusion formula)
 ai_f0 <- bf(AltercentricIntrusion ~ 1 + 
               (1 | ID)) #This is the baseline model (as a practice/comparison thing)
@@ -90,7 +87,7 @@ ai_f1 <- bf(AltercentricIntrusion ~ 1 + Diagnosis +
 get_prior(ai_f0, dstand, family = gaussian) #We need a prior for the intercept, a prior for the sigma, and a prior for the sd:
 prior0 <- c(
   prior(normal(0, 1), class = Intercept),
-  prior(normal(1, 0.5), class = sigma),
+  prior(normal(1, 0.5), class = sigma), #0.5 is half of the sd of mean
   prior(normal(0, 0.5), class = sd) #Prior for the random effects - for the variation that each individual can have from the main effect
 )
 
@@ -104,7 +101,10 @@ prior1 <- c(
 ```
 
 
-```{r_1.1.2) prior predictive check}
+
+
+
+```{r 1.1.2 prior predictive check}
 #What is this?
 ai_m1_prior <- brm(
   ai_f1,
@@ -135,7 +135,7 @@ plot(conditional_effects(ai_m1_prior), spaghetti = T,
 ```
 
 
-```{r_1.1.3) Running the model(s)}
+```{r 1.1.3 Running the models}
 # Now we want to know whether this is a good model
 ai_m0 <- brm(
   ai_f0,
@@ -164,7 +164,7 @@ ai_m1 <- brm(
 ```
 
 
-```{r_1.1.4) Posterior predictive check}
+```{r 1.1.4 Posterior predictive check}
 
 pp_check(ai_m0) # We see that our model is describing the general shape pretty nicely
 
@@ -184,6 +184,16 @@ plot(conditional_effects(ai_m1), spaghetti = T,
 
 summary(ai_m1)
 ```
+
+```{r}
+#extracting post samples
+post <- posterior_samples(ai_m1)
+ggplot(post) + 
+  geom_density(aes(prior_sigma), fill = "red")  +
+  geom_density(aes(sigma), fill = "blue") # The prior looks very flat - model is very able to learn, not affected by prior
+```
+
+
 
 
 ```{r_1.1.5) ?}
