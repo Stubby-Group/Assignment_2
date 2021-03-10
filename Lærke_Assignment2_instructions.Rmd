@@ -73,7 +73,7 @@ ggplot(dstand, aes(AltercentricIntrusion)) +
   geom_density()
 ```
 
-```{r}
+```{r 1.1.1 Define model and priors. }
 # Writing formulas (ai_f = altercentric intrusion formula)
 ai_f0 <- bf(AltercentricIntrusion ~ 1 + 
               (1 | ID)) #This is the baseline model (as a practice/comparison thing)
@@ -186,6 +186,12 @@ summary(ai_m1)
 ```
 
 ```{r}
+post <- posterior_samples(ai_m0)
+ggplot(post) + 
+  geom_density(aes(prior_sigma), fill = "red")  +
+  geom_density(aes(sigma), fill = "blue")
+
+
 #extracting post samples
 post <- posterior_samples(ai_m1)
 ggplot(post) + 
@@ -332,6 +338,26 @@ ai_m2
 ## Second part
 
 Q2.1) However, we know that the diagnosis is based on symptom assessment: if the overall sum of symptoms is severe enough, the participant gets a diagnosis. In other words, by selecting the patients, and including the symptoms in the model we might have inadvertently introduced an issue in our inference. Do try to draw a causal graph (Directed Acyclical Graph) of the variables and compare it with the types of causal graphs presented in the slides. Discuss which biases you might have introduced.
+
+```{r}
+
+g <- dagitty('dag {
+    MR [pos = "1,1"]
+    A [pos = "2,1"]
+    VH [pos = "3,1"]
+    D [pos = "2,0"]
+    AI [pos = "2,2"]
+
+    VH -> D
+    MR -> D
+    A -> D
+    VH -> AI
+    MR -> AI
+    A -> AI
+}')
+plot(g)
+```
+
 
 Q2.2.) Redesign your analysis following the graph and report how the results change
 
