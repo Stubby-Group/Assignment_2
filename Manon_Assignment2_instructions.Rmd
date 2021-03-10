@@ -5,6 +5,22 @@ date: "2/5/2020"
 output: html_document
 ---
 
+```{r to fix cmdstan}
+cmdstanr::install_cmdstan(
+  dir = NULL,
+  cores = getOption("mc.cores", 2),
+  quiet = FALSE,
+  overwrite = FALSE,
+  timeout = 1200,
+  version = NULL,
+  release_url = NULL,
+  cpp_options = list(),
+  check_toolchain = TRUE
+)
+
+# cmdstan path: /Users/manon/.cmdstanr/cmdstan-2.26.1
+```
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -35,8 +51,8 @@ The research questions you have to answer are the following:
 Q1.1) Does schizophrenia involve altercentric intrusion? Define model and priors. Test the implications of your priors (prior predictive checks) and if needed adjust them. Run the model. Test the quality of the fitted model (posterior predictive checks, prior-posterior updates). Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots.
 
 ```{r}
-library(tidyverse)
-pacman::p_load(brms)
+library(tidyverse, brms, rethinking)
+#install.packages(rstan)
 d <- read.csv("Ass2.csv")
 print(paste(mean(d$VoiceHearing),
             mean(d$MindReading),
@@ -47,28 +63,110 @@ print(paste(mean(d$VoiceHearing),
 model_1 <- brm(data = d,
                family = gaussian,
                formula = AltercentricIntrusion ~ 1 + Diagnosis,
-               )
+               prior = c(prior(normal(0, 0.2), class = Intercept),
+                         prior(normal(0, 0.5), class = b),                    
+                         prior(exponential(1), class = sigma))) #prior(normal(sd(scaledOutcomevar, 0.5)), class = sigma)
 
-print(model_1)
+summary(model_1)
+
+get_prior(AltercentricIntrusion ~ 1 + Diagnosis, data = d, family = gaussian) # this is the default priors for the model?
+prior_summary(model_1)                                                        # while these are the current priors?
+
 # test implications of your priors (prior predictive checks)
+pp_check(model_1)
+
+  # from: https://mc-stan.org/docs/2_23/stan-users-guide/prior-predictive-checks.html
+  # Prior predictive checks generate data according to the prior in order to asses whether a prior is appropriate (Gabry et al. 2019). A posterior predictive check generates replicated data according to the posterior predictive distribution. In contrast, the prior predictive check generates data according to the prior predictive distribution,
 
 # test the quality of the fitted model (posterior predictive checks, prior-posterior updates)
 
 # plot
 ```
-
+(M: Riccardo said "sigma is the expected error the model is going to make")
 
 Q1.2) Is altercentric intrusion related to specific symptoms *in the patients*? Identify which of the symptoms could be relevant (given their description above). Should you include more than one symptom? Build models, priors, predictive checks. Assess the evidence and report models and results, including plots. Discuss whether the results make sense.
 
 
 ```{r}
+# the marking of *in the patients* in the question would indicate that we should sort out those without diagnosis 1
 
+# making separate data for patients only
+d_patients <- d %>%
+  filter(Diagnosis == 1)
+
+# standardizing variables
+d_patients$VoiceHearing <- standardize(d_patients$VoiceHearing)
+d_patients$MindReading <- standardize(d_patients$MindReading)
+d_patients$Apathy <- standardize(d_patients$Apathy)
+d_patients$AltercentricIntrusion <- standardize(d_patients$AltercentricIntrusion)
+
+# model 1: VoiceHearing
+m_vh <- brm(data = d_patients,
+            family = gaussian,
+            formula = AltercentricIntrusion ~ 1 + VoiceHearing,
+            prior = c(prior(normal(0, 1), class = Intercept),
+                      prior(normal(0, 0.5), class = b),                    
+                      prior(normal(1, 0.5), class = sigma)))
+summary(m_vh)
+
+# model 2: MindReading
+m_mr <- brm(data = d_patients,
+            family = gaussian,
+            formula = AltercentricIntrusion ~ 1 + MindReading,
+            prior = c(prior(normal(0, 1), class = Intercept),
+                      prior(normal(0, 0.5), class = b),                    
+                      prior(normal(1, 0.5), class = sigma)))
+summary(m_mr)
+
+# model 3: Apathy
+m_a <- brm(data = d_patients,
+            family = gaussian,
+            formula = AltercentricIntrusion ~ 1 + Apathy,
+            prior = c(prior(normal(0, 1), class = Intercept),
+                      prior(normal(0, 0.5), class = b),                    
+                      prior(normal(1, 0.5), class = sigma)))
+summary(m_a)
+
+# model 4: Combined
+m_combined <- brm(data = d_patients,
+            family = gaussian,
+            formula = AltercentricIntrusion ~ 1 + VoiceHearing + MindReading + Apathy,
+            prior = c(prior(normal(0, 1), class = Intercept),
+                      prior(normal(0, 0.5), class = b),                    
+                      prior(normal(1, 0.5), class = sigma)))
+summary(m_combined)
 ```
 
 
 ## Second part
 
 Q2.1) However, we know that the diagnosis is based on symptom assessment: if the overall sum of symptoms is severe enough, the participant gets a diagnosis. In other words, by selecting the patients, and including the symptoms in the model we might have inadvertently introduced an issue in our inference. Do try to draw a causal graph (Directed Acyclical Graph) of the variables and compare it with the types of causal graphs presented in the slides. Discuss which biases you might have introduced.
+```{r Drawing a DAG}
+# VH, MR and A are the three clinical features
+# the point is how these three relate to AI, but we should of course think through which arrows we should plot
+# the diagnosis here is just a post-hoc label so to speak. so it's not a proxy for the underlying condition.
+library(dagitty)
+diagnosis_dag <- dagitty( "dag {
+    Diagosis -> VoiceHearing
+    Diagosis -> AltercentricIntrusion
+    Diagosis -> MindReading
+    Diagosis -> Apathy
+}")
+drawdag(diagnosis_dag)
+impliedConditionalIndependencies(diagnosis_dag)
+
+#
+diagnosis_dag <- dagitty( "dag {
+    VoiceHearing -> Diagosis
+    MindReading -> Diagosis
+    Apathy -> Diagosis
+    VoiceHearing -> AltercentricIntrusion
+    MindReading -> AltercentricIntrusion
+    Apathy -> AltercentricIntrusion
+}")
+coordinates(diagnosis_dag) <- list(x=c(VoiceHearing = 1, Apathy = 2, Diagosis = 2, AltercentricIntrusion = 2, MindReading = 3),
+                                   y=c(Diagosis = 1, VoiceHearing = 2, Apathy = 2, MindReading = 2, AltercentricIntrusion = 13
+
 
 Q2.2.) Redesign your analysis following the graph and report how the results change
 
@@ -131,3 +229,4 @@ pairs.panels(d1)
 write_csv(d, "data/Ass2.csv")
 ```
 
+(M: the third part is just to look at the code that generated the data and reflect on that compared to our results)
