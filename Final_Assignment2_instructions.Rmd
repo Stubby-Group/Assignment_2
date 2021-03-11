@@ -70,7 +70,7 @@ model_1 <- brm(
   f1,
   d_std,
   family = gaussian,
-  prior = prior1,
+  prior = m_priors,
   sample_prior = T,
   back="cmdstanr", # Just makes it run faster
   threads = threading(2),
@@ -85,7 +85,7 @@ model_0 <- brm(
   f0,
   d_std,
   family = gaussian,
-  prior = prior0,
+  prior = m_priors0,
   sample_prior = T,
   back="cmdstanr", 
   threads = threading(2) 
