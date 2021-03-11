@@ -51,6 +51,10 @@ d_std$MindReading <- standardize(d_std$MindReading)
 d_std$Apathy <- standardize(d_std$Apathy)
 d_std$AltercentricIntrusion <- standardize(d_std$AltercentricIntrusion)
 
+# Model formulas:
+f0 <- bf(AltercentricIntrusion ~ 1) # Baseline model
+f1 <- bf(AltercentricIntrusion ~ 1 + Diagnosis) # Model with a predictor
+
 
 # investigate whether a schizophrenia diagnosis predicts increased altercentric intrusion
 # defining priors (so we don't have to do it over and over again, because we use the same ones)
@@ -58,14 +62,38 @@ m_priors <- c(prior(normal(0, 1), class = Intercept),
               prior(normal(0, 0.5), class = b),
               prior(normal(1, 0.5), class = sigma)) #note: prior(normal(sd(scaledOutcomevar, 0.5)), class = sigma)
 
+m_priors0 <- c(prior(normal(0, 1), class = Intercept),
+               prior(normal(1, 0.5), class = sigma))
 
 # define model
-model_1 <- brm(data = d_std,
-               family = gaussian,
-               formula = AltercentricIntrusion ~ 1 + Diagnosis,
-               prior = m_priors)
+model_1 <- brm(
+  f1,
+  d_std,
+  family = gaussian,
+  prior = prior1,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2),
+  chains = 2,
+  cores = 2
+)
 
 summary(model_1)
+
+# And the baseline model:
+model_0 <- brm(
+  f0,
+  d_std,
+  family = gaussian,
+  prior = prior0,
+  sample_prior = T,
+  back="cmdstanr", 
+  threads = threading(2) 
+) 
+
+
+
+
 
 get_prior(AltercentricIntrusion ~ 1 + Diagnosis, data = d_std, family = gaussian) # this is the default priors for the model
 prior_summary(model_1)                                                          # while these are the current priors
@@ -89,12 +117,29 @@ m1_priorpp <- brm(
 #Shows us how the predictions of the model are going to spread out compared to the actual data
 pp_check(m1_priorpp, nsamples = 100) +
   ggtitle("Prior predictive check: AltercentricIntrusion ~ 1 + Diagnosis")
+plot(conditional_effects(m1_priorpp), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T)
+plot(conditional_effects(m1_priorpp), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
+
 
 
 # test the quality of the fitted model (posterior predictive checks, prior-posterior updates)
 # posterior predictive check
 pp_check(model_1) +
   ggtitle("Posterior predictive check: AltercentricIntrusion ~ 1 + Diagnosis")
+plot(conditional_effects(model_1), spaghetti = T, 
+     method = "predict", 
+     nsamples = 100, 
+     points = T) 
+plot(conditional_effects(model_1), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
 ```
 (M: Riccardo said "sigma is the expected error the model is going to make")
 
