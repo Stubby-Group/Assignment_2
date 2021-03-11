@@ -177,7 +177,7 @@ m_a <- brm(
 )
 
 # model 4: Combined
-f_combined <- bf(AltercentricIntrusion ~ 1 + Apathy)
+f_combined <- bf(AltercentricIntrusion ~ 1 + Apathy + MindReading + VoiceHearing)
 
 m_combined <- brm(
   f_combined,
