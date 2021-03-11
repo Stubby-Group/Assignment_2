@@ -126,35 +126,70 @@ Q1.2) Is altercentric intrusion related to specific symptoms *in the patients*? 
 
 
 ```{r Q1.2 New models: Is altercentric intrusion related to specific symptoms in the patients?}
-# the marking of *in the patients* in the question would indicate that we should sort out those without diagnosis 1
-
 # making separate data for patients only
-d_patients <- d_std %>%
+d_patients <- dstd %>%
   filter(Diagnosis == 1)
 
 # model 1: VoiceHearing
-m_vh <- brm(data = d_patients,
-            family = gaussian,
-            formula = AltercentricIntrusion ~ 1 + VoiceHearing,
-            prior = m_priors)
+f_vh <- bf(AltercentricIntrusion ~ 1 + VoiceHearing)
+
+m_vh <- brm(
+  f_vh,
+  d_patients,
+  family = gaussian,
+  prior = m_priors,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2),
+  chains = 2,
+  cores = 2
+)
+
 
 # model 2: MindReading
-m_mr <- brm(data = d_patients,
-            family = gaussian,
-            formula = AltercentricIntrusion ~ 1 + MindReading,
-            prior = m_priors)
+f_mr <- bf(AltercentricIntrusion ~ 1 + MindReading)
+
+m_mr <- brm(
+  f_mr,
+  d_patients,
+  family = gaussian,
+  prior = m_priors,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2),
+  chains = 2,
+  cores = 2
+)
 
 # model 3: Apathy
-m_a <- brm(data = d_patients,
-            family = gaussian,
-            formula = AltercentricIntrusion ~ 1 + Apathy,
-            prior = m_priors)
+f_a <- bf(AltercentricIntrusion ~ 1 + Apathy)
+
+m_a <- brm(
+  f_a,
+  d_patients,
+  family = gaussian,
+  prior = m_priors,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2),
+  chains = 2,
+  cores = 2
+)
 
 # model 4: Combined
-m_combined <- brm(data = d_patients,
-            family = gaussian,
-            formula = AltercentricIntrusion ~ 1 + VoiceHearing + MindReading + Apathy,
-            prior = m_priors)
+f_combined <- bf(AltercentricIntrusion ~ 1 + Apathy)
+
+m_combined <- brm(
+  f_combined,
+  d_patients,
+  family = gaussian,
+  prior = m_priors,
+  sample_prior = T,
+  back="cmdstanr", # Just makes it run faster
+  threads = threading(2),
+  chains = 2,
+  cores = 2
+)
 
 # model summaries:
 summary(m_vh)
@@ -181,33 +216,32 @@ waic_modelcomparions <- loo_compare(add_criterion(m_vh, criterion = "waic"),
 
 # rethinking::compare(m_vh, m_mr, m_a, m_combined)
 
+
+vh <- posterior_samples(m_vh)
+ggplot(vh) + 
+  geom_density(aes(prior_sigma), fill = "red")  +
+  geom_density(aes(sigma), fill = "blue") + 
+  ggtitle("Voice Hearing")
+
+mr <- posterior_samples(m_mr)
+ggplot(mr) + 
+  geom_density(aes(prior_sigma), fill = "red")  +
+  geom_density(aes(sigma), fill = "blue") + 
+  ggtitle("Mind Reading")
+
+a <- posterior_samples(m_a)
+ggplot(a) + 
+  geom_density(aes(prior_sigma), fill = "red")  +
+  geom_density(aes(sigma), fill = "blue") + 
+  ggtitle("Apathy")
+
+combined <- posterior_samples(m_combined)
+ggplot(combined) + 
+  geom_density(aes(prior_sigma), fill = "red")  +
+  geom_density(aes(sigma), fill = "blue") + 
+  ggtitle("Combined")
 ```
 
-
-```{r q1.2 priors only, ppchecks}
-
-prior_pp_check_func <- function(custom_formula) {
-  m_prior <- brm(
-    formula = custom_formula,
-    data = d_patients,
-    family = gaussian,
-    prior = m_priors,
-    sample_prior = "only",
-    back="cmdstanr",
-    threads = threading(2), 
-    chains = 2,
-    cores = 2
-    )
-  
-  return(pp_check(m_prior, nsamples = 100))
-}
-
-prior_pp_check_func(AltercentricIntrusion ~ 1 + VoiceHearing) + ggtitle("prior pp_check: VoiceHearing")
-prior_pp_check_func(AltercentricIntrusion ~ 1 + MindReading) + ggtitle("prior pp_check: MindReading")
-prior_pp_check_func(AltercentricIntrusion ~ 1 + Apathy) + ggtitle("prior pp_check: Apathy")
-prior_pp_check_func(AltercentricIntrusion ~ 1 + VoiceHearing + MindReading + Apathy) + ggtitle("prior pp_check: Combined")
-
-```
 
 
 ## Second part
