@@ -50,91 +50,163 @@ The research questions you have to answer are the following:
 
 Q1.1) Does schizophrenia involve altercentric intrusion? Define model and priors. Test the implications of your priors (prior predictive checks) and if needed adjust them. Run the model. Test the quality of the fitted model (posterior predictive checks, prior-posterior updates). Assess the evidence in favor of an increased altercentric intrusion in schizophrenia. Report the model and the results, including plots.
 
-```{r}
-library(tidyverse, brms, rethinking)
-#install.packages(rstan)
+```{r making the initial model and checks}
+library(tidyverse)
+library(brms)
+library(rethinking)
+
 d <- read.csv("Ass2.csv")
-print(paste(mean(d$VoiceHearing),
-            mean(d$MindReading),
-            mean(d$Apathy),
-            mean(d$AltercentricIntrusion)))
+
+# standardize 
+d_std <- d
+d_std$VoiceHearing <- standardize(d_std$VoiceHearing)
+d_std$MindReading <- standardize(d_std$MindReading)
+d_std$Apathy <- standardize(d_std$Apathy)
+d_std$AltercentricIntrusion <- standardize(d_std$AltercentricIntrusion)
+
+
 # investigate whether a schizophrenia diagnosis predicts increased altercentric intrusion
-# define model and priors
-model_1 <- brm(data = d,
+# defining priors (so we don't have to do it over and over again, because we use the same ones)
+m_priors <- c(prior(normal(0, 1), class = Intercept),
+              prior(normal(0, 0.5), class = b),
+              prior(normal(1, 0.5), class = sigma)) #note: prior(normal(sd(scaledOutcomevar, 0.5)), class = sigma)
+
+# define model
+model_1 <- brm(data = d_std,
                family = gaussian,
                formula = AltercentricIntrusion ~ 1 + Diagnosis,
-               prior = c(prior(normal(0, 0.2), class = Intercept),
-                         prior(normal(0, 0.5), class = b),                    
-                         prior(exponential(1), class = sigma))) #prior(normal(sd(scaledOutcomevar, 0.5)), class = sigma)
+               prior = m_priors)
 
 summary(model_1)
 
-get_prior(AltercentricIntrusion ~ 1 + Diagnosis, data = d, family = gaussian) # this is the default priors for the model?
-prior_summary(model_1)                                                        # while these are the current priors?
+get_prior(AltercentricIntrusion ~ 1 + Diagnosis, data = d_std, family = gaussian) # this is the default priors for the model
+prior_summary(model_1)                                                          # while these are the current priors
+
+# plotting
+# m1_post <- posterior_samples(model_1)
+# ggplot(m1_post) + 
+#  geom_density(aes(prior_sigma), fill = "red")  +
+#  geom_density(aes(sigma), fill = "blue")
 
 # test implications of your priors (prior predictive checks)
-pp_check(model_1)
+m1_priorpp <- brm(
+  formula = AltercentricIntrusion ~ 1 + Diagnosis,
+  data = d_std,
+  family = gaussian,
+  prior = m_priors,
+  sample_prior = "only",
+  back="cmdstanr",
+  threads = threading(2), 
+  chains = 2, #L: these two (chains and cores = 2) make the model run faster
+  cores = 2
+) #L: This is to see how the model fits the data before having seen the data
+
+# prior predictive check
+#L: Shows us how the predictions of the model are going to spread out compared to the actual data
+pp_check(m1_priorpp, nsamples = 100) +
+  ggtitle("Prior predictive check: AltercentricIntrusion ~ 1 + Diagnosis")
+
+
 
   # from: https://mc-stan.org/docs/2_23/stan-users-guide/prior-predictive-checks.html
   # Prior predictive checks generate data according to the prior in order to asses whether a prior is appropriate (Gabry et al. 2019). A posterior predictive check generates replicated data according to the posterior predictive distribution. In contrast, the prior predictive check generates data according to the prior predictive distribution,
 
-# test the quality of the fitted model (posterior predictive checks, prior-posterior updates)
 
-# plot
+
+# test the quality of the fitted model (posterior predictive checks, prior-posterior updates)
+# posterior predictive check
+pp_check(model_1) +
+  ggtitle("Posterior predictive check: AltercentricIntrusion ~ 1 + Diagnosis")
+
+
 ```
 (M: Riccardo said "sigma is the expected error the model is going to make")
 
 Q1.2) Is altercentric intrusion related to specific symptoms *in the patients*? Identify which of the symptoms could be relevant (given their description above). Should you include more than one symptom? Build models, priors, predictive checks. Assess the evidence and report models and results, including plots. Discuss whether the results make sense.
 
 
-```{r}
+```{r Q1.2 New models: Is altercentric intrusion related to specific symptoms in the patients?}
 # the marking of *in the patients* in the question would indicate that we should sort out those without diagnosis 1
 
 # making separate data for patients only
-d_patients <- d %>%
+d_patients <- d_std %>%
   filter(Diagnosis == 1)
-
-# standardizing variables
-d_patients$VoiceHearing <- standardize(d_patients$VoiceHearing)
-d_patients$MindReading <- standardize(d_patients$MindReading)
-d_patients$Apathy <- standardize(d_patients$Apathy)
-d_patients$AltercentricIntrusion <- standardize(d_patients$AltercentricIntrusion)
 
 # model 1: VoiceHearing
 m_vh <- brm(data = d_patients,
             family = gaussian,
             formula = AltercentricIntrusion ~ 1 + VoiceHearing,
-            prior = c(prior(normal(0, 1), class = Intercept),
-                      prior(normal(0, 0.5), class = b),                    
-                      prior(normal(1, 0.5), class = sigma)))
-summary(m_vh)
+            prior = m_priors)
 
 # model 2: MindReading
 m_mr <- brm(data = d_patients,
             family = gaussian,
             formula = AltercentricIntrusion ~ 1 + MindReading,
-            prior = c(prior(normal(0, 1), class = Intercept),
-                      prior(normal(0, 0.5), class = b),                    
-                      prior(normal(1, 0.5), class = sigma)))
-summary(m_mr)
+            prior = m_priors)
 
 # model 3: Apathy
 m_a <- brm(data = d_patients,
             family = gaussian,
             formula = AltercentricIntrusion ~ 1 + Apathy,
-            prior = c(prior(normal(0, 1), class = Intercept),
-                      prior(normal(0, 0.5), class = b),                    
-                      prior(normal(1, 0.5), class = sigma)))
-summary(m_a)
+            prior = m_priors)
 
 # model 4: Combined
 m_combined <- brm(data = d_patients,
             family = gaussian,
             formula = AltercentricIntrusion ~ 1 + VoiceHearing + MindReading + Apathy,
-            prior = c(prior(normal(0, 1), class = Intercept),
-                      prior(normal(0, 0.5), class = b),                    
-                      prior(normal(1, 0.5), class = sigma)))
+            prior = m_priors)
+
+# model summaries:
+summary(m_vh)
+summary(m_mr)
+summary(m_a)
 summary(m_combined)
+
+# posterior predictive checks:
+pp_check(m_vh) +
+  ggtitle("Posterior predictive check: VoiceHearing")
+pp_check(m_mr) +
+  ggtitle("Posterior predictive check: MindReading")
+pp_check(m_a) +
+  ggtitle("Posterior predictive check: Apathy")
+pp_check(m_combined) +
+  ggtitle("Posterior predictive check: Combined")
+
+
+#model comparisons?
+waic_modelcomparions <- loo_compare(add_criterion(m_vh, criterion = "waic"),
+                                    add_criterion(m_mr, criterion = "waic"),
+                                    add_criterion(m_a, criterion = "waic"),
+                                    add_criterion(m_combined, criterion = "waic"), criterion = "waic")
+
+# rethinking::compare(m_vh, m_mr, m_a, m_combined)
+
+```
+
+
+```{r q1.2 priors only, ppchecks}
+
+prior_pp_check_func <- function(custom_formula) {
+  m_prior <- brm(
+    formula = custom_formula,
+    data = d_patients,
+    family = gaussian,
+    prior = m_priors,
+    sample_prior = "only",
+    back="cmdstanr",
+    threads = threading(2), 
+    chains = 2,
+    cores = 2
+    )
+  
+  return(pp_check(m_prior, nsamples = 100))
+}
+
+prior_pp_check_func(AltercentricIntrusion ~ 1 + VoiceHearing) + ggtitle("prior pp_check: VoiceHearing")
+prior_pp_check_func(AltercentricIntrusion ~ 1 + MindReading) + ggtitle("prior pp_check: MindReading")
+prior_pp_check_func(AltercentricIntrusion ~ 1 + Apathy) + ggtitle("prior pp_check: Apathy")
+prior_pp_check_func(AltercentricIntrusion ~ 1 + VoiceHearing + MindReading + Apathy) + ggtitle("prior pp_check: Combined")
+
 ```
 
 
@@ -145,17 +217,7 @@ Q2.1) However, we know that the diagnosis is based on symptom assessment: if the
 # VH, MR and A are the three clinical features
 # the point is how these three relate to AI, but we should of course think through which arrows we should plot
 # the diagnosis here is just a post-hoc label so to speak. so it's not a proxy for the underlying condition.
-library(dagitty)
-diagnosis_dag <- dagitty( "dag {
-    Diagosis -> VoiceHearing
-    Diagosis -> AltercentricIntrusion
-    Diagosis -> MindReading
-    Diagosis -> Apathy
-}")
-drawdag(diagnosis_dag)
-impliedConditionalIndependencies(diagnosis_dag)
 
-#
 diagnosis_dag <- dagitty( "dag {
     VoiceHearing -> Diagosis
     MindReading -> Diagosis
@@ -165,10 +227,16 @@ diagnosis_dag <- dagitty( "dag {
     Apathy -> AltercentricIntrusion
 }")
 coordinates(diagnosis_dag) <- list(x=c(VoiceHearing = 1, Apathy = 2, Diagosis = 2, AltercentricIntrusion = 2, MindReading = 3),
-                                   y=c(Diagosis = 1, VoiceHearing = 2, Apathy = 2, MindReading = 2, AltercentricIntrusion = 13
-
+                                   y=c(Diagosis = 1, VoiceHearing = 2, Apathy = 2, MindReading = 2, AltercentricIntrusion = 3))
+                                   
+drawdag(diagnosis_dag)
+impliedConditionalIndependencies(diagnosis_dag)
+```
 
 Q2.2.) Redesign your analysis following the graph and report how the results change
+```{r}
+
+```
 
 
 ## Third part
