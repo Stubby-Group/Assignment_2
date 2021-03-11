@@ -103,7 +103,7 @@ Q1.2) Is altercentric intrusion related to specific symptoms *in the patients*? 
 
 ```{r Q1.2 New models: Is altercentric intrusion related to specific symptoms in the patients?}
 # making separate data for patients only
-d_patients <- dstd %>%
+d_patients <- d_std %>%
   filter(Diagnosis == 1)
 
 # model 1: VoiceHearing
@@ -244,9 +244,6 @@ impliedConditionalIndependencies(diagnosis_dag)
 ```
 
 Q2.2.) Redesign your analysis following the graph and report how the results change
-```{r}
-
-```
 
 
 ## Third part
