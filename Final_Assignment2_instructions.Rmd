@@ -5,21 +5,6 @@ date: "2/5/2020"
 output: html_document
 ---
 
-```{r to fix cmdstan}
-cmdstanr::install_cmdstan(
-  dir = NULL,
-  cores = getOption("mc.cores", 2),
-  quiet = FALSE,
-  overwrite = FALSE,
-  timeout = 1200,
-  version = NULL,
-  release_url = NULL,
-  cpp_options = list(),
-  check_toolchain = TRUE
-)
-
-# cmdstan path: /Users/manon/.cmdstanr/cmdstan-2.26.1
-```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
