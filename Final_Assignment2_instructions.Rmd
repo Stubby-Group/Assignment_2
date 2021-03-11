@@ -40,7 +40,9 @@ library(tidyverse)
 library(brms)
 library(rethinking)
 
+
 d <- read.csv("Ass2.csv")
+
 
 # standardize 
 d_std <- d
@@ -56,6 +58,7 @@ m_priors <- c(prior(normal(0, 1), class = Intercept),
               prior(normal(0, 0.5), class = b),
               prior(normal(1, 0.5), class = sigma)) #note: prior(normal(sd(scaledOutcomevar, 0.5)), class = sigma)
 
+
 # define model
 model_1 <- brm(data = d_std,
                family = gaussian,
@@ -67,11 +70,6 @@ summary(model_1)
 get_prior(AltercentricIntrusion ~ 1 + Diagnosis, data = d_std, family = gaussian) # this is the default priors for the model
 prior_summary(model_1)                                                          # while these are the current priors
 
-# plotting
-# m1_post <- posterior_samples(model_1)
-# ggplot(m1_post) + 
-#  geom_density(aes(prior_sigma), fill = "red")  +
-#  geom_density(aes(sigma), fill = "blue")
 
 # test implications of your priors (prior predictive checks)
 m1_priorpp <- brm(
@@ -82,28 +80,21 @@ m1_priorpp <- brm(
   sample_prior = "only",
   back="cmdstanr",
   threads = threading(2), 
-  chains = 2, #L: these two (chains and cores = 2) make the model run faster
+  chains = 2, #these two (chains and cores = 2) make the model run faster
   cores = 2
-) #L: This is to see how the model fits the data before having seen the data
+) #This is to see how the model fits the data before having seen the data
+
 
 # prior predictive check
-#L: Shows us how the predictions of the model are going to spread out compared to the actual data
+#Shows us how the predictions of the model are going to spread out compared to the actual data
 pp_check(m1_priorpp, nsamples = 100) +
   ggtitle("Prior predictive check: AltercentricIntrusion ~ 1 + Diagnosis")
-
-
-
-  # from: https://mc-stan.org/docs/2_23/stan-users-guide/prior-predictive-checks.html
-  # Prior predictive checks generate data according to the prior in order to asses whether a prior is appropriate (Gabry et al. 2019). A posterior predictive check generates replicated data according to the posterior predictive distribution. In contrast, the prior predictive check generates data according to the prior predictive distribution,
-
 
 
 # test the quality of the fitted model (posterior predictive checks, prior-posterior updates)
 # posterior predictive check
 pp_check(model_1) +
   ggtitle("Posterior predictive check: AltercentricIntrusion ~ 1 + Diagnosis")
-
-
 ```
 (M: Riccardo said "sigma is the expected error the model is going to make")
 
