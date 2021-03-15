@@ -244,6 +244,14 @@ ggplot(vh) +
   geom_density(aes(prior_sigma), fill = "red", alpha = 0.5)  +
   geom_density(aes(sigma), fill = "blue", alpha = 0.5) + 
   ggtitle("Voice Hearing")
+plot(conditional_effects(m_vh), spaghetti = T, # Victor: This does still not at all look like what Riccardo did in the lecture, and they are still completely the same for some reason :}
+     method = "predict", 
+     nsamples = 100, 
+     points = T)
+plot(conditional_effects(m_vh), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
 
 mr <- posterior_samples(m_mr)
 ggplot(mr) + 
