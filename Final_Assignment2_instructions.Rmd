@@ -39,6 +39,7 @@ Q1.1) Does schizophrenia involve altercentric intrusion? Define model and priors
 library(tidyverse)
 library(brms)
 library(rethinking)
+pacman::p_load(bayesplot, viridis, ggplot2, dagitty)
 
 
 d <- read.csv("Ass2.csv")
@@ -240,9 +241,17 @@ waic_modelcomparions <- loo_compare(add_criterion(m_vh, criterion = "waic"),
 
 vh <- posterior_samples(m_vh)
 ggplot(vh) + 
-  geom_density(aes(prior_sigma), fill = "red")  +
-  geom_density(aes(sigma), fill = "blue") + 
+  geom_density(aes(prior_sigma), fill = "red", alpha = 0.5)  +
+  geom_density(aes(sigma), fill = "blue", alpha = 0.5) + 
   ggtitle("Voice Hearing")
+plot(conditional_effects(m_vh), spaghetti = T, # Victor: This does still not at all look like what Riccardo did in the lecture, and they are still completely the same for some reason :}
+     method = "predict", 
+     nsamples = 100, 
+     points = T)
+plot(conditional_effects(m_vh), spaghetti = T, 
+     method = "fitted", 
+     nsamples = 100, 
+     points = T)
 
 mr <- posterior_samples(m_mr)
 ggplot(mr) + 
